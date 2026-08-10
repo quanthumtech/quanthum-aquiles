@@ -1,12 +1,52 @@
 {
   "name": "aquiles",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "placeholders": {
     "__APP_NAME__": {
       "prompt": "Nome do projeto",
       "files": [".env.example"]
     }
   },
+  "variants": {
+    "frontend": {
+      "prompt": "Qual frontend?",
+      "default": "react",
+      "options": {
+        "react": {
+          "description": "Inertia + React + shadcn/ui",
+          "path": "variants/frontend/react",
+          "setup": [
+            "rm -f vite.config.js resources/js/app.js resources/views/welcome.blade.php",
+            "composer require inertiajs/inertia-laravel"
+          ]
+        },
+        "livewire-mary": {
+          "description": "Livewire + MaryUI",
+          "path": "variants/frontend/livewire-mary",
+          "setup": [
+            "composer require livewire/livewire robsontenorio/mary",
+            "php artisan mary:install --npm --no-interaction",
+            "rm -f resources/views/welcome.blade.php"
+          ]
+        },
+        "livewire-daisy": {
+          "description": "Livewire + DaisyUI",
+          "path": "variants/frontend/livewire-daisy",
+          "setup": [
+            "composer require livewire/livewire"
+          ]
+        },
+        "livewire-tall": {
+          "description": "Livewire + Alpine + Tailwind (TALL puro, sem kit de componentes)",
+          "path": "variants/frontend/livewire-tall",
+          "setup": [
+            "composer require livewire/livewire"
+          ]
+        }
+      }
+    }
+  },
+  "variantsCleanup": ["variants"],
   "setup": [
     "cp .env.example .env",
     "composer install",

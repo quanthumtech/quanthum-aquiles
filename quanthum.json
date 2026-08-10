@@ -1,0 +1,16 @@
+{
+  "name": "aquiles",
+  "version": "0.1.0",
+  "placeholders": {
+    "APP_NAME": {
+      "prompt": "Nome do projeto",
+      "files": [".env.example"]
+    }
+  },
+  "setup": [
+    "cp .env.example .env",
+    "composer install",
+    "php artisan key:generate",
+    "npm install"
+  ]
+}

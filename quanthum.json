@@ -2,7 +2,7 @@
   "name": "aquiles",
   "version": "0.1.0",
   "placeholders": {
-    "APP_NAME": {
+    "__APP_NAME__": {
       "prompt": "Nome do projeto",
       "files": [".env.example"]
     }

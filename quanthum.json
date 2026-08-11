@@ -17,6 +17,7 @@
           "path": "variants/frontend/react",
           "setup": [
             "rm -f vite.config.js resources/js/app.js resources/views/welcome.blade.php",
+            "rm -rf resources/views/auth",
             "composer require inertiajs/inertia-laravel"
           ]
         },

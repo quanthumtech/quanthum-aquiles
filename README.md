@@ -1,24 +1,37 @@
 # Quanthum Aquiles
 
 Núcleo Laravel da Quanthum Architecture. Todo projeto scaffolded a partir
-daqui já nasce com os 8 pilares (menos o Frontend Moderno — isso é a M2,
-uma flag ainda não implementada; por enquanto este núcleo é backend-only).
+daqui já nasce com os 8 pilares.
 
 ## O que já vem por padrão
 
 | Pilar | Pacote / mecanismo |
 |---|---|
 | Enterprise Foundation | Laravel 13 + Sail (MySQL + Redis) |
-| Security First | Sanctum (API), RBAC via spatie/laravel-permission |
+| Security First | Sanctum (API), RBAC via spatie/laravel-permission, login via Fortify (ver abaixo) |
 | Audit & Governance | owen-it/laravel-auditing (`audits` table, `User` já é `Auditable`) |
+| Modern Frontend | flag `--frontend=react\|livewire-mary\|livewire-daisy\|livewire-tall` (ver `quanthum.json`) |
 | AI Driven Development | `App\Services\AI\QaiOnlineService` + `config/qai.php` |
 | Integration Layer | Horizon (dashboard em `/horizon`, protegido por RBAC) + filas Redis |
 | Cloud Ready | Docker via Sail; ver seção "Deploy em produção (Dokploy)" da documentação da arquitetura |
 | Security First / SSO | directorytree/ldaprecord-laravel — **desligado por padrão** (ver abaixo) |
 
-Frontend (pilar "Modern Frontend") ainda não está incluído — Laravel entrega
-o esqueleto padrão (Blade + Vite mínimo). As 4 variações
-(`--frontend=react|livewire-mary|livewire-daisy|livewire-tall`) são a M2.
+## Login
+
+`laravel/fortify` já vem no núcleo — todo projeto nasce com `/login`,
+`/forgot-password` e `/reset-password/{token}` funcionando, igual qualquer
+starter kit padrão do Laravel (não é preciso instalar nada a mais). As
+views ficam em `resources/views/auth/*.blade.php` (Tailwind puro, sem kit de
+componentes — funcionam de graça pro variant `livewire-tall`). Os variants
+`livewire-mary`/`livewire-daisy` sobrescrevem essas views com os componentes
+do respectivo kit; o `react` sobrescreve `FortifyServiceProvider` inteiro
+pra renderizar via Inertia (`resources/js/pages/auth/*.tsx`) em vez de Blade.
+
+Registro de conta (`Features::registration()`) fica **desligado** por padrão
+— a maioria dos projetos Aquiles são ferramentas internas/admin, com o
+primeiro usuário criado via `DatabaseSeeder`. O variant `react` (o único
+pensado como SPA client-facing) liga registro no seu próprio
+`config/fortify.php`.
 
 ## Por que este núcleo existe
 
@@ -78,6 +91,18 @@ por cima deste client — ele não pressupõe nenhum model específico.
 
 Dashboard em `/horizon`, protegido em `app/Providers/HorizonServiceProvider.php`
 — só usuários com role `super_admin` acessam (não é allowlist de e-mail).
+
+## Qualidade de código
+
+```bash
+sail composer fix      # aplica o Pint (formatação automática)
+sail composer stan     # PHPStan/Larastan, nível 5, só em app/
+sail composer verify   # pint --test + stan + testes em paralelo — roda tudo, não corrige nada
+```
+
+`verify` é o que roda antes de um PR/deploy: falha se o Pint encontrar
+código fora do padrão (sem reescrever nada — pra isso é o `fix`), se o
+PHPStan achar um problema de tipo, ou se algum teste quebrar.
 
 ## O que este núcleo NÃO faz
 

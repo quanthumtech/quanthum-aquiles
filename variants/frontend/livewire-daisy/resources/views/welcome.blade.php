@@ -36,6 +36,10 @@
             </div>
 
             <livewire:counter />
+
+            <div>
+                <a href="{{ route('login') }}" class="btn btn-primary">Entrar</a>
+            </div>
         </main>
 
         @livewireScripts

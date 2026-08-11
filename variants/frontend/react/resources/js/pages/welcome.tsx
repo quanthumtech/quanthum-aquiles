@@ -1,4 +1,4 @@
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -40,8 +40,11 @@ export default function Welcome({ appName, pillars }: WelcomeProps) {
                     </CardContent>
                 </Card>
 
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                     <Button asChild>
+                        <Link href="/login">Entrar</Link>
+                    </Button>
+                    <Button variant="outline" asChild>
                         <a href="https://laravel.com/docs" target="_blank" rel="noopener noreferrer">
                             Documentação Laravel
                         </a>

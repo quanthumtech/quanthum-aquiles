@@ -15,6 +15,7 @@
         "react": {
           "description": "Inertia + React + shadcn/ui",
           "path": "variants/frontend/react",
+          "supportsPostSetup": true,
           "setup": [
             "rm -f vite.config.js resources/js/app.js resources/views/welcome.blade.php",
             "rm -rf resources/views/auth",

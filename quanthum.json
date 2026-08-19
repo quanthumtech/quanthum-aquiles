@@ -51,7 +51,7 @@
   "variantsCleanup": ["variants"],
   "setup": [
     "cp .env.example .env",
-    "composer install",
+    "composer install --ignore-platform-req=ext-pcntl --ignore-platform-req=ext-posix",
     "php artisan key:generate",
     "npm install"
   ]

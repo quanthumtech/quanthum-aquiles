@@ -6,6 +6,7 @@ use App\Models\QuanthumSsoIdentity;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;
@@ -55,7 +56,11 @@ class LoginFlowTest extends TestCase
             $this->assertStringContainsString('data-test="quanthum-sso-button"', $login['html']);
             $this->assertStringContainsString('/quanthum-sso/redirect', $login['html']);
             $this->assertStringContainsString('/images/auth/quanthum-q-light.png', $login['html']);
-            $this->assertStringContainsString('/images/auth/quanthum-q-dark.png', $login['html']);
+            // O núcleo/livewire-tall é sempre claro (só o logo claro); mary/daisy trazem o par por tema.
+            $this->assertTrue(
+                ! str_contains($login['html'], 'bg-base-') || str_contains($login['html'], '/images/auth/quanthum-q-dark.png'),
+                'Variantes com tema escuro (daisyUI) precisam do par de logos.',
+            );
             $this->assertStringContainsString('Sign in with Quanthum SSO', $login['html']);
         }
     }
@@ -201,6 +206,74 @@ class LoginFlowTest extends TestCase
             ['id', 'user_id', 'issuer', 'sub', 'created_at', 'updated_at'],
             array_keys(QuanthumSsoIdentity::query()->firstOrFail()->getAttributes()),
         );
+    }
+
+    public function test_logout_after_sso_login_goes_to_the_provider_end_session_with_the_exact_post_logout_uri(): void
+    {
+        User::factory()->create(['email' => 'ana@example.test']);
+        $this->completeLogin()->assertRedirect(config('fortify.home'));
+
+        $response = $this->post('/logout');
+
+        $location = (string) $response->headers->get('Location');
+        $this->assertStringStartsWith(Fixture::ISSUER.'/oauth/logout?', $location);
+        parse_str((string) parse_url($location, PHP_URL_QUERY), $query);
+        $this->assertSame(Fixture::POST_LOGOUT_URI, $query['post_logout_redirect_uri']);
+        $this->assertSame(Fixture::CLIENT_ID, $query['client_id']);
+        $this->assertCount(3, explode('.', $query['id_token_hint']));
+        $this->assertGuest();
+    }
+
+    public function test_logout_for_an_inertia_request_uses_the_inertia_location_protocol(): void
+    {
+        User::factory()->create(['email' => 'ana@example.test']);
+        $this->completeLogin();
+
+        $response = $this->withHeaders(['X-Inertia' => 'true'])->post('/logout');
+
+        $response->assertStatus(409);
+        $this->assertStringStartsWith(Fixture::ISSUER.'/oauth/logout?', (string) $response->headers->get('X-Inertia-Location'));
+        $this->assertGuest();
+    }
+
+    public function test_logout_of_a_local_login_stays_local_without_calling_the_provider(): void
+    {
+        Fixture::configure();
+        $user = User::factory()->create(['password' => 'secret-pass-123']);
+        Http::fake();
+
+        $this->post('/login', ['email' => $user->email, 'password' => 'secret-pass-123']);
+        $response = $this->post('/logout');
+
+        $this->assertStringNotContainsString('/oauth/logout', (string) $response->headers->get('Location'));
+        $this->assertGuest();
+        Http::assertNothingSent();
+    }
+
+    public function test_logout_with_a_nearly_expired_id_token_stays_local(): void
+    {
+        User::factory()->create(['email' => 'ana@example.test']);
+        $this->completeLogin(['exp' => time() + 3]);
+
+        $response = $this->post('/logout');
+
+        $this->assertStringNotContainsString('/oauth/logout', (string) $response->headers->get('Location'));
+        $this->assertGuest();
+    }
+
+    public function test_logout_stays_local_when_the_provider_discovery_fails(): void
+    {
+        User::factory()->create(['email' => 'ana@example.test']);
+        $this->completeLogin();
+        Cache::flush();
+        // Fábrica nova: um Http::fake extra não vence os stubs do login (o primeiro que casa ganha).
+        Http::swap(new Factory);
+        Http::fake([Fixture::ISSUER.'/.well-known/openid-configuration' => Http::response('boom', 503)]);
+
+        $response = $this->post('/logout');
+
+        $this->assertStringNotContainsString('/oauth/logout', (string) $response->headers->get('Location'));
+        $this->assertGuest();
     }
 
     /**

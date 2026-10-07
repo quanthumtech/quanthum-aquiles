@@ -5,14 +5,25 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { QuanthumSsoButton, QuanthumSsoError } from '@/components/quanthum-sso';
 
 interface LoginProps {
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
+    locale?: string;
+    quanthumSsoAvailable?: boolean;
+    quanthumSsoError?: string | null;
 }
 
-export default function Login({ status, canResetPassword, canRegister }: LoginProps) {
+export default function Login({
+    status,
+    canResetPassword,
+    canRegister,
+    locale,
+    quanthumSsoAvailable = false,
+    quanthumSsoError,
+}: LoginProps) {
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
@@ -43,6 +54,12 @@ export default function Login({ status, canResetPassword, canRegister }: LoginPr
                         </CardHeader>
                         <CardContent>
                             {status && <p className="mb-4 text-center text-sm text-green-600">{status}</p>}
+
+                            {quanthumSsoError && (
+                                <div className="mb-4">
+                                    <QuanthumSsoError code={quanthumSsoError} locale={locale} />
+                                </div>
+                            )}
 
                             <form onSubmit={submit}>
                                 <FieldGroup>
@@ -96,6 +113,7 @@ export default function Login({ status, canResetPassword, canRegister }: LoginPr
                                         <Button type="submit" disabled={processing}>
                                             Entrar
                                         </Button>
+                                        <QuanthumSsoButton available={quanthumSsoAvailable} locale={locale} />
                                         {canRegister && (
                                             <FieldDescription className="text-center">
                                                 Não tem conta?{' '}

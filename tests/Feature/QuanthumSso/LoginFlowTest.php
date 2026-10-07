@@ -36,7 +36,7 @@ class LoginFlowTest extends TestCase
 
     public function test_login_page_has_no_sso_button_when_enabled_but_unconfigured(): void
     {
-        config(['quanthum_sso.enabled' => true]);
+        config(['quanthum_sso.enabled' => true, 'quanthum_sso.issuer' => null, 'quanthum_sso.client_id' => null, 'quanthum_sso.client_secret' => null]);
 
         $this->assertFalse($this->loginPage()['available']);
     }

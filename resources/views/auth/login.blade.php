@@ -17,6 +17,12 @@
                 <div class="mb-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">{{ $status }}</div>
             @endif
 
+            @if (! empty($quanthumSsoError ?? null))
+                <div role="alert" data-test="quanthum-sso-error" class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+                    {{ __('quanthum_sso.error.'.\App\Services\QuanthumSso\QuanthumSsoFailure::from($quanthumSsoError)->messageKey()) }}
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div class="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
                     {{ $errors->first() }}
@@ -52,6 +58,20 @@
                 <button type="submit" class="w-full rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
                     Entrar
                 </button>
+                @if ($quanthumSsoAvailable ?? false)
+                    <div class="my-1 flex items-center gap-3 text-xs text-gray-500" aria-hidden="true">
+                        <span class="h-px flex-1 bg-gray-200"></span>
+                        <span>{{ __('quanthum_sso.or') }}</span>
+                        <span class="h-px flex-1 bg-gray-200"></span>
+                    </div>
+
+                    <a href="{{ route('quanthum-sso.redirect') }}" data-test="quanthum-sso-button"
+                        class="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">
+                        <img src="/images/auth/quanthum-q-light.png" alt="" width="20" height="20" aria-hidden="true" class="size-5 dark:hidden" />
+                        <img src="/images/auth/quanthum-q-dark.png" alt="" width="20" height="20" aria-hidden="true" class="hidden size-5 dark:block" />
+                        {{ __('quanthum_sso.button') }}
+                    </a>
+                @endif
             </form>
         </div>
     </div>

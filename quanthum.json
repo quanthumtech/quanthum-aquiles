@@ -1,6 +1,6 @@
 {
   "name": "aquiles",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "placeholders": {
     "__APP_NAME__": {
       "prompt": "Nome do projeto",

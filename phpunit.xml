@@ -28,6 +28,14 @@
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <env name="QUANTHUM_SSO_ENABLED" value="false" force="true"/>
+        <env name="QUANTHUM_SSO_AUTO_PROVISION" value="false" force="true"/>
+        <env name="QUANTHUM_LICENSE_ENFORCE" value="false" force="true"/>
+        <env name="QUANTHUM_LICENSE_SERVER_URL" value="" force="true"/>
+        <env name="CHECKOUT_BASE_URL" value="" force="true"/>
+        <env name="CHECKOUT_CLIENT_TOKEN" value="" force="true"/>
+        <env name="CHECKOUT_WEBHOOK_SECRET" value="" force="true"/>
+        <env name="CHECKOUT_WEBHOOK_SECRET_PREVIOUS" value="" force="true"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>

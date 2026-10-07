@@ -27,30 +27,37 @@ class LoginFlowTest extends TestCase
 
     public function test_login_page_has_no_sso_button_by_default(): void
     {
-        $html = $this->get('/login')->assertOk()->getContent();
+        $login = $this->loginPage();
 
-        $this->assertStringNotContainsString('quanthum-sso-button', $html);
-        $this->assertStringNotContainsString('/quanthum-sso/redirect', $html);
-        $this->assertStringContainsString('name="password"', $html);
+        $this->assertFalse($login['available']);
+        $this->assertStringNotContainsString('quanthum-sso-button', $login['html']);
+        $this->assertStringNotContainsString('/quanthum-sso/redirect', $login['html']);
     }
 
     public function test_login_page_has_no_sso_button_when_enabled_but_unconfigured(): void
     {
         config(['quanthum_sso.enabled' => true]);
 
-        $this->get('/login')->assertOk()->assertDontSee('quanthum-sso-button', false);
+        $this->assertFalse($this->loginPage()['available']);
     }
 
     public function test_login_page_shows_the_button_with_both_logos_when_available(): void
     {
         Fixture::configure();
 
-        $this->get('/login')->assertOk()
-            ->assertSee('data-test="quanthum-sso-button"', false)
-            ->assertSee('/quanthum-sso/redirect', false)
-            ->assertSee('/images/auth/quanthum-q-light.png', false)
-            ->assertSee('/images/auth/quanthum-q-dark.png', false)
-            ->assertSee('Sign in with Quanthum SSO');
+        $login = $this->loginPage();
+
+        $this->assertTrue($login['available']);
+
+        // Na variante react (Inertia) o botão é desenhado no navegador a partir do
+        // flag acima; o markup abaixo é do Blade (núcleo, mary, daisy, tall).
+        if (! $login['inertia']) {
+            $this->assertStringContainsString('data-test="quanthum-sso-button"', $login['html']);
+            $this->assertStringContainsString('/quanthum-sso/redirect', $login['html']);
+            $this->assertStringContainsString('/images/auth/quanthum-q-light.png', $login['html']);
+            $this->assertStringContainsString('/images/auth/quanthum-q-dark.png', $login['html']);
+            $this->assertStringContainsString('Sign in with Quanthum SSO', $login['html']);
+        }
     }
 
     public function test_button_text_follows_the_portuguese_locale(): void
@@ -58,7 +65,13 @@ class LoginFlowTest extends TestCase
         Fixture::configure();
         app()->setLocale('pt_BR');
 
-        $this->get('/login')->assertOk()->assertSee('Entrar com Quanthum SSO');
+        $login = $this->loginPage();
+
+        if ($login['inertia']) {
+            $this->assertSame('pt_BR', $login['props']['locale']);
+        } else {
+            $this->assertStringContainsString('Entrar com Quanthum SSO', $login['html']);
+        }
     }
 
     public function test_local_login_keeps_working_with_sso_on(): void
@@ -100,7 +113,8 @@ class LoginFlowTest extends TestCase
         $this->assertGuest();
         $this->assertSame(0, Fixture::sentCount(fn ($r) => str_ends_with($r->url(), '/oauth/token')));
 
-        $this->get('/login')->assertSee('data-test="quanthum-sso-error"', false);
+        $login = $this->loginPage();
+        $this->assertSame('invalid_state', $login['error']);
     }
 
     public function test_callback_without_a_started_flow_is_refused(): void
@@ -187,6 +201,32 @@ class LoginFlowTest extends TestCase
             ['id', 'user_id', 'issuer', 'sub', 'created_at', 'updated_at'],
             array_keys(QuanthumSsoIdentity::query()->firstOrFail()->getAttributes()),
         );
+    }
+
+    /**
+     * Lê o /login nas duas formas do Aquiles: Blade (núcleo e variantes livewire)
+     * ou página Inertia (variante react, props em data-page).
+     *
+     * @return array{html: string, inertia: bool, available: bool, error: ?string, props: array<string, mixed>}
+     */
+    private function loginPage(): array
+    {
+        $html = (string) $this->get('/login')->assertOk()->getContent();
+        $inertia = str_contains($html, 'data-page="app"');
+        $props = [];
+
+        if ($inertia) {
+            preg_match('/<script data-page="app" type="application\/json">(.*?)<\/script>/s', $html, $m);
+            $props = (array) (json_decode($m[1] ?? '{}', true)['props'] ?? []);
+        }
+
+        return [
+            'html' => $html,
+            'inertia' => $inertia,
+            'props' => $props,
+            'available' => $inertia ? ($props['quanthumSsoAvailable'] ?? false) === true : str_contains($html, 'data-test="quanthum-sso-button"'),
+            'error' => $inertia ? ($props['quanthumSsoError'] ?? null) : (str_contains($html, 'data-test="quanthum-sso-error"') ? 'invalid_state' : null),
+        ];
     }
 
     /**

@@ -53,10 +53,22 @@
                 @if ($quanthumSsoAvailable ?? false)
                     <div class="divider my-0 text-xs">{{ __('quanthum_sso.or') }}</div>
 
+                    {{-- O mary:install troca o variant `dark:` do Tailwind por uma classe .dark que ninguém
+                         aplica; o tema real é o do daisyUI (dark --prefersdark ou [data-theme=dark]).
+                         O par de logos segue ESSE gatilho, sem depender do `dark:` do Tailwind. --}}
+                    <style>
+                        .quanthum-sso-logo-dark { display: none; }
+                        @media (prefers-color-scheme: dark) {
+                            :root:not([data-theme]) .quanthum-sso-logo-light { display: none; }
+                            :root:not([data-theme]) .quanthum-sso-logo-dark { display: inline-block; }
+                        }
+                        [data-theme=dark] .quanthum-sso-logo-light { display: none; }
+                        [data-theme=dark] .quanthum-sso-logo-dark { display: inline-block; }
+                    </style>
                     <a href="{{ route('quanthum-sso.redirect') }}" data-test="quanthum-sso-button"
                         class="btn btn-outline w-full">
-                        <img src="/images/auth/quanthum-q-light.png" alt="" width="20" height="20" aria-hidden="true" class="size-5 dark:hidden" />
-                        <img src="/images/auth/quanthum-q-dark.png" alt="" width="20" height="20" aria-hidden="true" class="hidden size-5 dark:block" />
+                        <img src="/images/auth/quanthum-q-light.png" alt="" width="20" height="20" aria-hidden="true" class="quanthum-sso-logo-light size-5" />
+                        <img src="/images/auth/quanthum-q-dark.png" alt="" width="20" height="20" aria-hidden="true" class="quanthum-sso-logo-dark size-5" />
                         {{ __('quanthum_sso.button') }}
                     </a>
                 @endif

@@ -67,8 +67,8 @@
 
                     <a href="{{ route('quanthum-sso.redirect') }}" data-test="quanthum-sso-button"
                         class="flex w-full items-center justify-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50">
-                        <img src="/images/auth/quanthum-q-light.png" alt="" width="20" height="20" aria-hidden="true" class="size-5 dark:hidden" />
-                        <img src="/images/auth/quanthum-q-dark.png" alt="" width="20" height="20" aria-hidden="true" class="hidden size-5 dark:block" />
+                        {{-- Esta tela (núcleo/livewire-tall) é sempre clara, sem estilo dark: só o logo claro. --}}
+                        <img src="/images/auth/quanthum-q-light.png" alt="" width="20" height="20" aria-hidden="true" class="size-5" />
                         {{ __('quanthum_sso.button') }}
                     </a>
                 @endif

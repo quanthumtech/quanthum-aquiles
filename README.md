@@ -86,7 +86,7 @@ na tela de login, exibido apenas com o SSO ligado **e** configurado.
 
 1. Peça o cadastro do client OIDC à Quanthum Services (guia de integração OIDC).
    Redirect URI: `<APP_URL>/quanthum-sso/callback`.
-2. Preencha `QUANTHUM_SSO_*` no `.env` e `QUANTHUM_SSO_ENABLED=true`.
+2. Preencha `QUANTHUM_SSO_*` no `.env` e `QUANTHUM_SSO_ENABLED=true`. Issuer, client id, client secret, redirect URI e **`QUANTHUM_SSO_POST_LOGOUT_REDIRECT_URI`** são todos obrigatórios (URLs `https` válidas, sem curinga): com qualquer um vazio o SSO fica indisponível sem aviso e o botão não aparece. Referência de implantação, não garantia de conformidade.
 3. Vínculo: por `issuer`+`sub`; na primeira entrada, por e-mail verificado (no
    provedor e localmente), nunca para `admin`/`super_admin`. Usuário novo só é
    criado com `QUANTHUM_SSO_AUTO_PROVISION=true` (papel `user`).

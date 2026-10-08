@@ -2,6 +2,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { QuanthumSsoButton, QuanthumSsoError } from '@/components/quanthum-sso';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -9,9 +10,19 @@ interface LoginProps {
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
+    locale?: string;
+    quanthumSsoAvailable?: boolean;
+    quanthumSsoError?: string | null;
 }
 
-export default function Login({ status, canResetPassword, canRegister }: LoginProps) {
+export default function Login({
+    status,
+    canResetPassword,
+    canRegister,
+    locale,
+    quanthumSsoAvailable = false,
+    quanthumSsoError,
+}: LoginProps) {
     const { data, setData, post, processing, errors } = useForm({
         email: '',
         password: '',
@@ -31,6 +42,8 @@ export default function Login({ status, canResetPassword, canRegister }: LoginPr
                     <h1 className="text-center text-2xl font-semibold tracking-tight">Entrar</h1>
 
                     {status && <p className="text-center text-sm text-green-600">{status}</p>}
+
+                    <QuanthumSsoError code={quanthumSsoError} locale={locale} />
 
                     <Card>
                         <CardContent className="pt-6">
@@ -80,6 +93,8 @@ export default function Login({ status, canResetPassword, canRegister }: LoginPr
                                 <Button type="submit" disabled={processing} className="w-full">
                                     Entrar
                                 </Button>
+
+                                <QuanthumSsoButton available={quanthumSsoAvailable} locale={locale} />
 
                                 {canRegister && (
                                     <p className="text-muted-foreground text-center text-sm">

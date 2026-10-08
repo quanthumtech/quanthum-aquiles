@@ -8,13 +8,14 @@ daqui já nasce com os 8 pilares.
 | Pilar | Pacote / mecanismo |
 |---|---|
 | Enterprise Foundation | Laravel 13 + Sail (MySQL + Redis) |
-| Security First | Sanctum (API), RBAC via spatie/laravel-permission, login via Fortify (ver abaixo) |
+| Security First | Sanctum (API), RBAC via spatie/laravel-permission, login via Fortify + botão "Entrar com Quanthum SSO" (OIDC, opt-in; ver abaixo) |
 | Audit & Governance | owen-it/laravel-auditing (`audits` table, `User` já é `Auditable`) |
 | Modern Frontend | flag `--frontend=react\|livewire-mary\|livewire-daisy\|livewire-tall` (ver `quanthum.json`) |
 | AI Driven Development | `App\Services\AI\QaiOnlineService` + `config/qai.php` |
 | Integration Layer | Horizon (dashboard em `/horizon`, protegido por RBAC) + filas Redis |
 | Cloud Ready | Docker via Sail; ver seção "Deploy em produção (Dokploy)" da documentação da arquitetura |
-| Security First / SSO | directorytree/ldaprecord-laravel — **desligado por padrão** (ver abaixo) |
+| Security First / Diretório corporativo | directorytree/ldaprecord-laravel (LDAP) — **desligado por padrão** (ver "Login por LDAP") |
+| Integration Layer / Plataforma Quanthum | cliente do SSO Quanthum (OIDC), do servidor de Licenças e do Quanthum Checkout — **desligados por padrão** (ver "SSO Quanthum / Licenças / Checkout") |
 
 ## Login
 
@@ -64,10 +65,71 @@ O usuário de teste do `DatabaseSeeder` já nasce `super_admin`. Adicione as
 permissions do seu domínio em `database/seeders/RolePermissionSeeder.php`
 sem apagar as três roles.
 
-## SSO (LDAP) — opt-in
+## SSO Quanthum / Licenças / Checkout
 
+Tudo aqui é **aditivo e desligado por padrão**: sem as variáveis no `.env` o
+scaffold sobe igual, o login local (Fortify e-mail/senha) segue funcionando, e
+nenhuma chamada de rede acontece no boot nem nos testes. Linguagem de
+referência: a Quanthum adota ISO/IEC 27001 e 27002 como referência, em
+implantação (ver a Central de Confiança); este template não é certificado nem
+garante conformidade por si só.
+
+### SSO Quanthum (OIDC)
+
+Cliente do `quanthum-sso` (perfil `quanthum-oidc-profile` 1.0): Authorization
+Code + PKCE S256, `state`, `nonce`, id_token só RS256 (rejeita `none`/HS*/ES*),
+validação de `iss`, `aud`, `exp`, `nonce`, discovery pelo issuer, HTTPS
+obrigatório. Fica no núcleo (`app/Services/QuanthumSso`,
+`config/quanthum_sso.php`, `routes/quanthum-sso.php`); cada frontend só ganha o
+botão "Entrar com Quanthum SSO" (mesmo logo e `data-test="quanthum-sso-button"`)
+na tela de login, exibido apenas com o SSO ligado **e** configurado.
+
+1. Peça o cadastro do client OIDC à Quanthum Services (guia de integração OIDC).
+   Redirect URI: `<APP_URL>/quanthum-sso/callback`.
+2. Preencha `QUANTHUM_SSO_*` no `.env` e `QUANTHUM_SSO_ENABLED=true`. Issuer, client id, client secret, redirect URI e **`QUANTHUM_SSO_POST_LOGOUT_REDIRECT_URI`** são todos obrigatórios (URLs `https` válidas, sem curinga): com qualquer um vazio o SSO fica indisponível sem aviso e o botão não aparece. Referência de implantação, não garantia de conformidade.
+3. Vínculo: por `issuer`+`sub`; na primeira entrada, por e-mail verificado (no
+   provedor e localmente), nunca para `admin`/`super_admin`. Usuário novo só é
+   criado com `QUANTHUM_SSO_AUTO_PROVISION=true` (papel `user`).
+
+Só `issuer`+`sub` são gravados (`quanthum_sso_identities`); nome e e-mail vão
+para o `users`. `client_secret`, `code`, `state` e id_token nunca entram em log.
+
+### Licenças
+
+Cliente do `quanthum-licenses` (`App\Services\QuanthumLicense\LicenseManager`,
+`config/quanthum_license.php`): ativação com `php artisan quanthum:license:activate`,
+validate/heartbeat agendados (só quando `QUANTHUM_LICENSE_SERVER_URL` existe),
+assinatura Ed25519 conferida com `QUANTHUM_LICENSE_PUBLIC_KEY`. O middleware
+`licensed:<modulo>` é inerte com `QUANTHUM_LICENSE_ENFORCE=false`; com `true`,
+sem licença ativa e módulo habilitado responde 403 (pt/en).
+
+### Checkout
+
+Cliente fino do `quanthum-checkout` (`App\Services\QuanthumCheckout\CheckoutClient`:
+criar com `Idempotency-Key`, consultar, nota) e webhook de saída em
+`POST /api/webhooks/quanthum-checkout`, aceito só com HMAC-SHA256 válido
+(`X-Checkout-Signature`/`X-Checkout-Timestamp`, comparação em tempo constante,
+janela de 5 min). O evento autenticado vira `QuanthumCheckoutEventReceived`:
+deduplique por `id` e processe em fila. Valores em centavos inteiros. **O app
+não fala com Stripe nem Inter**: só com o servidor de checkout.
+
+### Quem é responsável pelo quê
+
+| Parte | Responsável |
+|---|---|
+| Validar id_token, PKCE/state/nonce, vínculo de usuário, sessão local, segredos no `.env`, HTTPS | o app (este template) |
+| Autenticar a pessoa, emitir o id_token, cadastrar o client OIDC, chaves de assinatura | provedor (`quanthum-sso`) |
+| Emitir/assinar a licença, módulos, expiração | provedor (`quanthum-licenses`); o app só valida e aplica |
+| Cobrança, provedor de pagamento, nota fiscal, assinar o webhook | provedor (`quanthum-checkout`); o app só chama a API e confere o HMAC |
+| Retenção de dados do produto, deduplicação de eventos, o que fazer em cada evento | o time do produto que usa o template |
+
+O template não implementa 2FA, retenção nem tratamento de dados além do acima.
+
+## Login por LDAP (opt-in)
+
+LDAP é o diretório corporativo, **não** o SSO Quanthum (que é OIDC, acima).
 Autenticação por padrão é `eloquent` (email/senha comuns) — funciona sem
-nenhum servidor externo. Pra ligar SSO de verdade:
+nenhum servidor externo. Pra ligar o login por LDAP:
 
 1. Preencha `LDAP_*` no `.env` (host, base DN, credenciais de bind).
 2. Ajuste `config/auth.php` → `'model'` do provider LDAP pro model do seu
